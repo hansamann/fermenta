@@ -12,6 +12,10 @@ OneWire oneWire(ONE_WIRE_BUS);
 // Pass our oneWire reference to Dallas Temperature.
 DallasTemperature sensors(&oneWire);
 
+// Addresses of 2 DS18B20s
+uint8_t sensor1[8] = { 0x28, 0xC1, 0xEB, 0x88, 0x42, 0x20, 0x01, 0x38 };
+uint8_t sensor2[8] = { 0x28, 0xCF, 0xA3, 0x67, 0x42, 0x20, 0x01, 0x2F };
+
 /*
    set LoraWan_RGB to Active,the RGB active in loraWan
    RGB red means sending;
@@ -27,13 +31,13 @@ static unsigned int counter = 0;
 static byte interval = 0;
 boolean lastState = false;
 unsigned long lastSend;
-unsigned long sendInterval = 600000; //every 10 mins
+unsigned long sendInterval = 120000; //every 10 mins
 unsigned long lastBlubb;
 
-/* OTAA para USED*/
-uint8_t devEui[] = { xxx };
-uint8_t appEui[] = { xxx };
-uint8_t appKey[] = { xxx };
+/* OTAA para USED - add your data below*/
+uint8_t devEui[] = { 0x01 };
+uint8_t appEui[] = { 0x02 };
+uint8_t appKey[] = { 0x03 };
 
 /* ABP para NOT USED*/
 uint8_t nwkSKey[] = { 0x15, 0xb1, 0xd0, 0xef, 0xa4, 0x63, 0xdf, 0xbe, 0x3d, 0x11, 0x18, 0x1e, 0x1e, 0xc7, 0xda, 0x85 };
@@ -98,12 +102,13 @@ static void prepareTxFrame( uint8_t port )
     for example, if use REGION_CN470,
     the max value for different DR can be found in MaxPayloadOfDatarateCN470 refer to DataratesCN470 and BandwidthsCN470 in "RegionCN470.h".
   */
-  appDataSize = 4;
+  appDataSize = 5;
 
   appData[0] = (counter >> 8);
   appData[1] = counter;
   appData[2] = interval;
-  appData[3] = getByteTemp();
+  appData[3] = getByteTemp(sensor1);
+  appData[4] = getByteTemp(sensor2);
 }
 
 
@@ -259,16 +264,16 @@ boolean getState() {
   return state;
 }
 
-byte getByteTemp() {
-  byte byteTemp = (getTemp() - 5) * 10;
+byte getByteTemp(DeviceAddress deviceAddress) {
+  byte byteTemp = (getTemp(deviceAddress) - 5) * 10;
   Serial.print("Byte temp (div by 10 then plus 5 ) is:  ");
   Serial.println(byteTemp);
   return byteTemp;
 }
 
-float getTemp() {
+float getTemp(DeviceAddress deviceAddress) {
   sensors.requestTemperatures(); // Send the command to get temperatures
-  float tempC = sensors.getTempCByIndex(0);
+  float tempC = sensors.getTempC(deviceAddress);
   Serial.print ("TempC is ");
   Serial.print (tempC);
   return tempC;
